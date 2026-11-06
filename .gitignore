@@ -1,0 +1,6 @@
+/Cache/
+/Working/
+/Builds/*.exe
+/Toolchains/
+**/bin/
+**/obj/

@@ -1,0 +1,85 @@
+# Builds and tests SubWake on every push and pull request.
+# A tag like v2.0.0 also creates a draft GitHub release with the installer and its SHA-256 checksum.
+# The maintainer reviews the draft and publishes it by hand. (Code signing through SignPath goes between the build and the release.)
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup --no-progress -y }
+
+      - name: Check the version matches the tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $version = ([xml](Get-Content Source\Desktop\SubWake.csproj -Raw)).SelectSingleNode('/Project/PropertyGroup/Version').InnerText
+          if ("v$version" -ne $env:GITHUB_REF_NAME) { throw "Tag $env:GITHUB_REF_NAME doesn't match <Version>$version</Version> in SubWake.csproj." }
+
+      - name: Build, test and package
+        shell: pwsh
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File Tools\Build.ps1
+
+      - name: Checksum
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem Builds\SubWake-Setup-*-x64.exe | Select-Object -First 1
+          $hash = (Get-FileHash $setup.FullName -Algorithm SHA256).Hash.ToLower()
+          "$hash  $($setup.Name)" | Set-Content "Builds\$($setup.Name).sha256" -Encoding ascii
+          Get-Content "Builds\$($setup.Name).sha256"
+
+      - name: Keep the test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: Working/logs/
+
+      - uses: actions/upload-artifact@v4
+        id: installer
+        with:
+          name: installer
+          path: |
+            Builds/SubWake-Setup-*-x64.exe
+            Builds/SubWake-Setup-*-x64.exe.sha256
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: installer
+          path: out
+      - name: Create a draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          notes=$(awk -v v="## $version" '$0==v{f=1;next} /^## /{f=0} f' CHANGELOG.md)
+          sha=$(cat out/*.sha256)
+          printf '%s\n\n**SHA-256:** `%s`\n\nNew to SubWake? See the [install steps](https://github.com/%s#install).\n' "$notes" "$sha" "$GITHUB_REPOSITORY" > notes.md
+          gh release create "$GITHUB_REF_NAME" out/* --draft --title "SubWake $version" --notes-file notes.md

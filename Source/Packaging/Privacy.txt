@@ -1,0 +1,29 @@
+SubWake: what it does and what it changes
+=========================================
+
+SubWake keeps a subwoofer with auto-standby awake. Every few minutes, while no other
+audio is playing, it plays a short, quiet low-frequency tone through the output you
+choose. You set the volume yourself.
+
+What it changes on this PC
+- Installs into your user folder (%LOCALAPPDATA%\Programs\SubWake). No admin rights.
+- Saves its settings and a log in %LOCALAPPDATA%\SubWake.
+- If you leave "Start SubWake when I sign in" checked, it adds itself to your
+  sign-in apps (you can turn this off in the app or in Windows Settings).
+
+Privacy
+- SubWake collects no personal data and has no telemetry or tracking.
+- It reads audio levels and which apps are recording only on this PC, to decide
+  when to play. Nothing is recorded or sent anywhere.
+- Its only network request is the optional update check: once a day it asks
+  GitHub (api.github.com) for the newest SubWake release. Like any web request,
+  GitHub sees your IP address. Nothing else is sent. You can turn it off on the
+  next page or at any time in the app (Options > Check for updates).
+- It never downloads or installs anything by itself.
+
+Uninstall
+- Settings > Apps > Installed apps > SubWake > Uninstall.
+- Your settings and log stay in %LOCALAPPDATA%\SubWake. Delete that folder to
+  remove them too.
+
+SubWake is free, open-source software under the MIT license.

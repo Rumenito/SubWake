@@ -1,0 +1,6 @@
+<Project><PropertyGroup>
+  <DefaultItemExcludes>$(DefaultItemExcludes);**\bin\**;**\obj\**</DefaultItemExcludes>
+  <!-- One folder per project, so the app and its tests don't share build state. -->
+  <BaseOutputPath>$(MSBuildThisFileDirectory)..\Working\bin\$(MSBuildProjectName)\</BaseOutputPath>
+  <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)..\Working\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+</PropertyGroup></Project>

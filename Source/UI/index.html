@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SubWake</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="app-header">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
+      <defs>
+        <linearGradient id="silver" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2f4f8"/><stop offset="1" stop-color="#96a2b2"/></linearGradient>
+        <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a2d33"/><stop offset="1" stop-color="#0e0f12"/></linearGradient>
+      </defs>
+      <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#tile)" stroke="#ffffff1f"/>
+      <circle cx="32" cy="32" r="21" fill="#23262b" stroke="url(#silver)" stroke-width="3.5"/>
+      <circle cx="32" cy="32" r="13.5" fill="#121417" stroke="#ffffff22"/>
+      <path d="M6 32 C10 21 14 21 19 32 S28 43 32 32 S41 21 45 32 S54 43 58 32" fill="none" stroke="#17191d" stroke-width="7" stroke-linecap="round"/>
+      <path d="M6 32 C10 21 14 21 19 32 S28 43 32 32 S41 21 45 32 S54 43 58 32" fill="none" stroke="url(#silver)" stroke-width="3.2" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <span class="brand-name">SUBWAKE</span>
+      <small>SUBWOOFER STANDBY GUARD</small>
+    </div>
+  </div>
+  <span class="status-pill" id="status-pill" data-mode="off"><i></i><span id="status-text">Starting</span></span>
+</header>
+
+<div class="update-banner" id="update-banner" hidden>
+  <span id="update-text">A new version is available</span>
+  <button class="ghost-button small" id="update-open">Download</button>
+</div>
+
+<main>
+  <section class="hero">
+    <div class="hero-row">
+      <div>
+        <h1>Keep subwoofer awake</h1>
+        <p id="hero-summary" class="muted">—</p>
+      </div>
+      <button class="switch large" id="enabled" role="switch" aria-checked="false" aria-label="Keep subwoofer awake"></button>
+    </div>
+    <dl class="stats">
+      <div><dt>Next burst</dt><dd id="next">—</dd></div>
+      <div><dt>Last burst</dt><dd id="last">—</dd></div>
+      <div><dt>Output</dt><dd id="output-state">—</dd></div>
+      <div><dt>Audio</dt><dd id="audio-state">—</dd></div>
+    </dl>
+    <div class="sub-timer" id="sub-timer" title="Time since the sub last got signal: a burst, or audio loud enough to count. Your sub goes into standby when this reaches its standby time.">
+      <div class="sub-timer-head"><span>Sub timer</span><span id="sub-timer-text">—</span></div>
+      <div class="meter"><i id="sub-timer-fill"></i></div>
+    </div>
+    <p class="error-line" id="error-line" hidden></p>
+    <button class="silver-button wide" id="play-now">Play burst now</button>
+    <div class="snooze" id="snooze">
+      <span>Pause for</span>
+      <button class="text-button" data-minutes="30">30 min</button>
+      <button class="text-button" data-minutes="60">1 h</button>
+      <button class="text-button" data-minutes="120">2 h</button>
+    </div>
+    <div class="snooze" id="snoozed" hidden>
+      <span id="snoozed-text">Paused</span>
+      <button class="text-button" id="resume">Resume now</button>
+    </div>
+  </section>
+
+  <section class="card volume-card">
+    <div class="card-heading">
+      <h2 class="eyebrow">WAKE SOUND VOLUME</h2>
+      <output id="level-value" class="volume-value">−30 dBFS</output>
+    </div>
+    <div class="range-wrap">
+      <input type="range" id="level" min="-60" max="-6" step="1" aria-label="Wake sound volume in dBFS">
+      <span class="range-mark" id="level-mark" hidden></span>
+    </div>
+    <div class="range-ends"><span>Quieter · −60</span><span id="level-mark-text" class="mark-text" hidden></span><span>Louder · −6</span></div>
+    <p class="hint">Drag the slider, or point at it and use the mouse wheel (1 dB per step). It sets the peak of the low tones together. The 20 kHz tone stays at −40 dBFS. Start low: the quietest level that wakes your sub is best.</p>
+    <div class="calibrate-row">
+      <div><strong>Not sure which volume to use?</strong><small>Calibrate finds the quietest volume that wakes the sub. You choose whether to use it.</small></div>
+      <button class="ghost-button" id="calibrate-open">Calibrate…</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-heading">
+      <h2 class="eyebrow">ACTIVITY · LAST 6 HOURS</h2>
+      <span id="today" class="today"></span>
+    </div>
+    <div class="timeline" id="timeline" aria-label="Bursts, music and pauses over the last 6 hours"></div>
+    <div class="timeline-axis"><span>6 h ago</span><span>4 h</span><span>2 h</span><span>Now</span></div>
+    <div class="legend"><span><i class="burst"></i>Burst</span><span><i class="music"></i>Music</span><span><i class="paused"></i>Paused</span></div>
+  </section>
+
+  <section class="card">
+    <h2 class="eyebrow">TONES</h2>
+    <div class="row">
+      <div><strong>Low tone</strong><small>The main wake-up tone, 35 Hz by default. Try another frequency if your sub doesn't wake reliably.</small></div>
+      <button class="switch" data-setting="toneLow" role="switch" aria-checked="false" aria-label="Low tone"></button>
+    </div>
+    <div class="field sub-field" id="low-hz-field">
+      <span>Frequency</span>
+      <div class="segmented" id="low-hz" role="radiogroup" aria-label="Low tone frequency">
+        <button role="radio" data-value="25">25 Hz</button><button role="radio" data-value="30">30</button><button role="radio" data-value="35">35</button><button role="radio" data-value="40">40</button><button role="radio" data-value="50">50</button><button role="radio" data-value="60">60</button>
+      </div>
+    </div>
+    <div class="row">
+      <div><strong>20 Hz tone</strong><small>Experimental. Many subs play it poorly. Try it if the low tone doesn't hold.</small></div>
+      <button class="switch" data-setting="tone20" role="switch" aria-checked="false" aria-label="20 Hz tone"></button>
+    </div>
+    <div class="row">
+      <div><strong>20 kHz tone</strong><small>Experimental, fixed at −40 dBFS. Above human hearing, but it also reaches your main speakers, and dogs and cats can hear it.</small></div>
+      <button class="switch" data-setting="tone20k" role="switch" aria-checked="false" aria-label="20 kHz tone"></button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 class="eyebrow">TIMING</h2>
+    <div class="field">
+      <span>Your sub sleeps after</span>
+      <div class="segmented" id="standby" role="radiogroup" aria-label="Your sub sleeps after">
+        <button role="radio" data-value="5">5 min</button><button role="radio" data-value="10">10</button><button role="radio" data-value="15">15</button><button role="radio" data-value="20">20</button><button role="radio" data-value="30">30</button><button role="radio" data-value="60">60</button>
+      </div>
+    </div>
+    <div class="field">
+      <span>Burst every</span>
+      <div class="segmented" id="interval" role="radiogroup" aria-label="Burst every"></div>
+    </div>
+    <div class="field">
+      <span>Burst length</span>
+      <div class="segmented" id="duration" role="radiogroup" aria-label="Burst length">
+        <button role="radio" data-value="1">1 s</button><button role="radio" data-value="1.5">1.5 s</button><button role="radio" data-value="2">2 s</button>
+      </div>
+    </div>
+    <p class="hint">Check your sub's manual for its standby time. 15 minutes is common. Every burst interval stays under it.</p>
+  </section>
+
+  <section class="card">
+    <h2 class="eyebrow">OUTPUT</h2>
+    <select id="device" aria-label="Output device"></select>
+    <p class="hint">The Windows output that feeds your subwoofer. It's remembered by its Windows ID, so renaming it doesn't break anything. Which outputs count as music is set under <b>Listening</b>.</p>
+  </section>
+
+  <section class="card">
+    <h2 class="eyebrow">LISTENING</h2>
+    <div class="row">
+      <div><strong>Wait for silence</strong><small>No bursts while audio plays on these outputs, since that keeps the sub awake already. The countdown restarts on every signal.</small></div>
+      <button class="switch" data-setting="skipWhileAudio" role="switch" aria-checked="false" aria-label="Wait for silence"></button>
+    </div>
+    <div class="row watch-row" id="watch-row">
+      <div><strong>Outputs that count as audio</strong><small id="watch-mode">Automatic: every output on the same device as your sub's output.</small></div>
+      <button class="ghost-button small" id="watch-edit" aria-expanded="false">Choose outputs…</button>
+    </div>
+    <div class="watch-editor" id="watch-editor" hidden>
+      <p class="hint">Turn on every output whose sound also reaches your sub. The burst output always counts.</p>
+      <ul class="watch-list" id="watch-list"></ul>
+      <div class="watch-actions"><button class="text-button" id="watch-auto">Use automatic</button><button class="ghost-button small" id="watch-close">Done</button></div>
+    </div>
+    <ul class="audio-outs" id="audio-outs"></ul>
+    <div class="threshold" id="threshold-block">
+      <div class="threshold-head"><span>Audio counts from</span><output id="threshold-value">−50 dBFS</output></div>
+      <div class="range-wrap">
+        <input type="range" id="threshold" min="-70" max="-10" step="1" aria-label="Audio counts from, in dBFS">
+        <span class="range-mark" id="threshold-mark" hidden></span>
+      </div>
+      <div class="range-ends"><span>Any sound · −70</span><span>Loud only · −10</span></div>
+      <p class="hint">Quieter audio doesn't keep the sub awake, so it doesn't hold bursts back. <button class="text-button inline" id="match-calibration" hidden></button></p>
+    </div>
+    <div class="row">
+      <div><strong>Hold while recording</strong><small>No bursts while an app records from a microphone or input, so they can't bleed into a take.</small></div>
+      <button class="switch" data-setting="holdWhileRecording" role="switch" aria-checked="false" aria-label="Hold while recording"></button>
+    </div>
+    <p class="live-note" id="recording-now" hidden></p>
+    <div class="row">
+      <div><strong>Hold while these apps are open</strong><small>For apps that play through ASIO, like a DAW. Windows can't see that audio.</small></div>
+      <button class="ghost-button small" id="add-app">Add app…</button>
+    </div>
+    <select id="app-pick" aria-label="Choose an app" hidden></select>
+    <ul class="app-chips" id="hold-apps"></ul>
+  </section>
+
+  <section class="card">
+    <h2 class="eyebrow">OPTIONS</h2>
+    <div class="row">
+      <div><strong>Let the sub sleep when you're away</strong><small>No bursts after this long without keyboard, mouse or audio. The first touch wakes it.</small></div>
+      <button class="switch" data-setting="sleepWhenAway" role="switch" aria-checked="false" aria-label="Let the sub sleep when you're away"></button>
+    </div>
+    <div class="field sub-field" id="away-field">
+      <span>Away after</span>
+      <div class="segmented" id="away" role="radiogroup" aria-label="Away after">
+        <button role="radio" data-value="15">15 min</button><button role="radio" data-value="30">30</button><button role="radio" data-value="60">1 h</button><button role="radio" data-value="120">2 h</button>
+      </div>
+    </div>
+    <div class="row">
+      <div><strong>Start with Windows</strong><small>Runs in the tray after you sign in.</small></div>
+      <button class="switch" id="startup" role="switch" aria-checked="false" aria-label="Start with Windows"></button>
+    </div>
+    <div class="row">
+      <div><strong>Burst after unlock, wake or return</strong><small>Wakes the sub as soon as you're back at the PC.</small></div>
+      <button class="switch" data-setting="burstAfterWake" role="switch" aria-checked="false" aria-label="Burst after unlock, wake or return"></button>
+    </div>
+    <div class="row">
+      <div><strong>Pause while locked</strong><small>Lets the sub sleep while the PC is locked.</small></div>
+      <button class="switch" data-setting="pauseWhenLocked" role="switch" aria-checked="false" aria-label="Pause while locked"></button>
+    </div>
+    <div class="row">
+      <div><strong>Quiet hours</strong><small>Lets the sub sleep during these hours.</small></div>
+      <button class="switch" data-setting="quietHours" role="switch" aria-checked="false" aria-label="Quiet hours"></button>
+    </div>
+    <div class="times" id="quiet-times" hidden>
+      <label>From <input type="time" id="quiet-start"></label>
+      <label>To <input type="time" id="quiet-end"></label>
+    </div>
+    <div class="row">
+      <div><strong>Alert if output is missing</strong><small>Shows a notification when the output isn't connected.</small></div>
+      <button class="switch" data-setting="notifyDeviceMissing" role="switch" aria-checked="false" aria-label="Alert if output is missing"></button>
+    </div>
+    <div class="row">
+      <div><strong>Check for updates</strong><small>Once a day, asks GitHub for the newest version. Nothing else is sent, and nothing installs by itself.</small></div>
+      <button class="switch" data-setting="checkForUpdates" role="switch" aria-checked="false" aria-label="Check for updates"></button>
+    </div>
+  </section>
+</main>
+
+<footer class="app-footer">
+  <button class="text-button" id="open-log">Open log</button>
+  <span class="footer-mid"><span id="version" class="muted"></span> · <button class="text-button" id="check-updates">Check for updates</button></span>
+  <button class="text-button" id="quit">Quit app</button>
+</footer>
+
+<dialog id="calibrate">
+  <h2>Calibrate volume</h2>
+  <div data-phase="none">
+    <ol>
+      <li>Set Windows, your audio interface or amp, and the sub to your usual volume.</li>
+      <li>Close anything that plays sound. SubWake waits <span id="cal-wait-min">16</span> minutes so the sub can fall asleep, and starts the wait over if it hears audio.</li>
+      <li>Bursts then get 3 dB louder every ~14 s, up to −6 dBFS. Click <b>Sub woke up</b> the moment it does.</li>
+      <li>You get a suggested volume. Your current volume only changes if you click <b>Use</b>.</li>
+    </ol>
+    <div class="dialog-actions"><button class="text-button" data-action="close">Cancel</button><button class="silver-button" data-action="start">Start</button></div>
+  </div>
+  <div data-phase="waiting">
+    <p>Waiting for the sub to go into standby. Keep everything silent.</p>
+    <p class="big-number" id="cal-wait">16:00</p>
+    <p class="cal-note" id="cal-note-waiting" hidden></p>
+    <div class="dialog-actions"><button class="text-button" data-action="cancel">Cancel</button><button class="silver-button" data-action="skip-wait">It's asleep, start now</button></div>
+  </div>
+  <div data-phase="stepping">
+    <p>Watch the sub. Click the button the moment it wakes up.</p>
+    <p class="big-number" id="cal-level">—</p>
+    <div class="progress"><i id="cal-progress"></i></div>
+    <div class="dialog-actions"><button class="text-button" data-action="cancel">Cancel</button><button class="silver-button" data-action="woke">Sub woke up</button></div>
+  </div>
+  <div data-phase="done">
+    <p id="cal-message"></p>
+    <p class="big-number" id="cal-suggested" hidden></p>
+    <div class="dialog-actions">
+      <button class="text-button" data-action="close" id="cal-keep">Keep current volume</button>
+      <button class="silver-button" data-action="apply" id="cal-apply">Use</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="setup">
+  <h2>Set up SubWake</h2>
+  <p>Three quick choices. No bursts play until you finish.</p>
+  <div class="setup-step">
+    <span class="step-num">1</span>
+    <div>
+      <strong>Which output feeds your subwoofer?</strong>
+      <select id="setup-device" aria-label="Output that feeds your subwoofer"></select>
+      <small>The Windows output wired to the sub, or to the speakers or amp it's connected through.</small>
+    </div>
+  </div>
+  <div class="setup-step">
+    <span class="step-num">2</span>
+    <div>
+      <strong>When does your sub go to standby?</strong>
+      <div class="segmented" id="setup-standby" role="radiogroup" aria-label="Your sub sleeps after">
+        <button role="radio" data-value="5">5 min</button><button role="radio" data-value="10">10</button><button role="radio" data-value="15">15</button><button role="radio" data-value="20">20</button><button role="radio" data-value="30">30</button><button role="radio" data-value="60">60</button>
+      </div>
+      <small>Check its manual. Not sure? Keep 15 minutes, which is common.</small>
+    </div>
+  </div>
+  <div class="setup-step">
+    <span class="step-num">3</span>
+    <div>
+      <div class="setup-level-head"><strong>Wake sound volume</strong><output id="setup-level-value">−40 dBFS</output></div>
+      <div class="range-wrap"><input type="range" id="setup-level" min="-60" max="-6" step="1" aria-label="Wake sound volume in dBFS"></div>
+      <small>Start low. Let the sub fall asleep, play a test burst, and raise the volume until it wakes. <b>Calibrate…</b> can find the level for you later.</small>
+      <button class="ghost-button small" id="setup-test">Play test burst</button>
+    </div>
+  </div>
+  <div class="dialog-actions"><button class="silver-button" id="setup-done">Start SubWake</button></div>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>

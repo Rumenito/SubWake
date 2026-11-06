@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <PlatformTarget>x64</PlatformTarget>
+    <ApplicationIcon>SubWake.ico</ApplicationIcon>
+    <AssemblyName>SubWake</AssemblyName>
+    <RootNamespace>SubWake</RootNamespace>
+    <Version>2.0.0</Version>
+    <Product>SubWake</Product>
+    <Company>Rumenito</Company>
+    <Authors>Rumenito</Authors>
+    <AssemblyTitle>SubWake</AssemblyTitle>
+    <Description>Keeps subwoofers with auto-standby awake with short, quiet low-frequency bursts.</Description>
+    <!-- The GitHub repository the update check asks for new releases ("owner/name"). -->
+    <GitHubRepo>Rumenito/SubWake</GitHubRepo>
+    <Copyright>(c) 2026 Rumenito</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
+    <Content Include="SubWake.ico" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The window's HTML/CSS/JS, served to WebView2 from <app>\ui. -->
+    <Content Include="..\UI\**\*" LinkBase="ui" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The build-time tests check the schedule rules directly. -->
+    <InternalsVisibleTo Include="SubWake.Tests" />
+    <AssemblyMetadata Include="GitHubRepo" Value="$(GitHubRepo)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- ReadyToRun recompiles these Microsoft-signed assemblies and drops their signatures, so leave them as shipped. -->
+    <PublishReadyToRunExclude Include="Microsoft.Web.WebView2.Core.dll;Microsoft.Web.WebView2.WinForms.dll" />
+  </ItemGroup>
+
+  <Target Name="RemoveUnusedWpfReference" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(Reference.Filename)' == 'Microsoft.Web.WebView2.Wpf'" />
+    </ItemGroup>
+  </Target>
+
+</Project>
