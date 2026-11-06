@@ -19,7 +19,7 @@ A new install (no `settings.json`) opens the window with a setup dialog, even wh
 | Keep subwoofer awake | On | Master switch. Turning it on plays a burst straight away. |
 | Play burst now | — | Plays one burst. Disabled while a burst plays ("Playing…") or during calibration. Doesn't wait for silence. |
 | Pause for 30 min · 1 h · 2 h | — | Under Play burst now. Snoozes bursts, then resumes by itself. While snoozed the row reads "Paused until *hh:mm* · Resume now". Disabled when keep-awake is off. Not saved: a restart ends a snooze. |
-| Wake sound volume | −40 dBFS | Range −60 to −6 in whole dB. Sets the **combined peak** of the low tone and the 20 Hz tone (see [Burst sound](#burst-sound)). Drag (saves on release), arrow keys, or mouse wheel over the slider at 1 dB per notch (shown at once, saved 350 ms after scrolling stops). Incoming state never moves the slider while it has focus or a wheel save is pending. A green mark shows where the sub woke in the last calibration, labelled "Woke at −*X*". |
+| Wake sound volume | −40 dBFS | Range −60 to −6 in whole dB. Sets the level of **each** low tone (the low tone and 20 Hz); they add up, so two tones at −6 peak near 0 dBFS (see [Burst sound](#burst-sound)). Drag (saves on release), arrow keys, or mouse wheel over the slider at 1 dB per notch (shown at once, saved 350 ms after scrolling stops). Incoming state never moves the slider while it has focus or a wheel save is pending. A green mark shows where the sub woke in the last calibration, labelled "Woke at −*X*". |
 | Calibrate… | — | Opens the calibration dialog (see below). Disabled while calibrating. |
 | Low tone | On | The main keep-awake tone. |
 | Frequency | 35 Hz | 25, 30, 35, 40, 50 or 60 Hz. Shown only while the low tone is on. |
@@ -64,8 +64,8 @@ A new install (no `settings.json`) opens the window with a setup dialog, even wh
 
 - Sine tones with 0.2 s raised-cosine fades, played at the output's own sample rate and written to every channel.
 - **Low tones (35 Hz, 20 Hz) share the volume as a peak.** When both are on, they're scaled together so the mix peaks at the set level instead of adding up past it. Each one is then about 6 dB quieter than it would be alone. Earlier versions let two tones at −6 dBFS reach 0 dBFS and clip.
-- The 20 kHz tone is added on top at −40 dBFS. The burst never clips.
-- Log text: "35 Hz at −40 dBFS for 1.5 s", or "35 Hz + 20 Hz at −6 dBFS peak + 20 kHz at −40 dBFS for 2 s".
+- The 20 kHz tone is added at −40 dBFS. If the sum would pass −0.1 dBFS it is scaled down, so the burst never clips.
+- Log text: "35 Hz at −40 dBFS for 1.5 s", or "35 Hz at −6 dBFS + 20 Hz at −6 dBFS + 20 kHz at −40 dBFS for 2 s".
 
 ## Schedule
 
@@ -166,7 +166,7 @@ Finds roughly the quietest level that wakes the sub, then lets the user choose.
 2. **Waiting:** a countdown of the standby time plus 1 minute (16 min for 15) so the sub can fall asleep. **It's asleep, start now** skips the wait. Any audio above −70 dBFS on the watched outputs starts the wait over, with the note "Audio played, so the wait started over. Keep everything silent."
 3. **Stepping:**
    - Bursts of the low tones only (no 20 kHz) at −60, −57 … −6 dBFS, +3 dB per step.
-   - Each step comes *burst length* + 12 s after the previous one.
+   - Each step comes *burst length* + 1 s after the previous one (3 s with a 2 s burst, about a minute from −60 to −6). If the sub is slow to wake, the click can come a step or two late; the 6 dB margin covers that.
    - A progress bar and the current level are shown.
    - Other audio during the test sends it back to waiting ("Audio played during the test, so it went back to waiting."). The app's own calibration bursts don't count.
    - The user clicks **Sub woke up**.

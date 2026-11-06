@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.1
+
+- **Fix:** the burst is as loud as in 1.0 again. Since 1.1.0 the low tones were scaled so their *sum* peaked at the volume setting, about 6 dB quieter, and some subs stopped waking. Now each tone plays at the set level and they add up, scaled only to stay just under 0 dBFS.
+- **Faster calibration:** a step every burst length + 1 s instead of + 12 s, so a full run takes about a minute instead of four and a half.
+
 ## 2.0.0
 
 The first public release, for any subwoofer with auto-standby.

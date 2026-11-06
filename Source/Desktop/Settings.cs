@@ -169,7 +169,7 @@ sealed class Settings
         return start < end ? time >= start && time < end : time >= start || time < end;
     }
 
-    /// <summary>Low tones at the set level (their combined peak); 20 kHz at a fixed -40 dBFS.</summary>
+    /// <summary>Each low tone at the set level; 20 kHz at a fixed -40 dBFS.</summary>
     public List<Tone> Tones(double? lowLevelDb = null, bool includeHigh = true)
     {
         double low = lowLevelDb ?? LevelDb;
@@ -181,15 +181,11 @@ sealed class Settings
         return tones;
     }
 
-    /// <summary>"35 Hz at -30 dBFS for 1.5 s", or "35 Hz + 20 Hz at -6 dBFS peak + 20 kHz at -40 dBFS for 2 s".</summary>
+    /// <summary>"35 Hz at -30 dBFS for 1.5 s", or "35 Hz at -6 dBFS + 20 Hz at -6 dBFS + 20 kHz at -40 dBFS for 2 s".</summary>
     public static string Describe(IReadOnlyList<Tone> tones, double seconds)
     {
-        var parts = new List<string>();
-        var low = tones.Where(t => t.IsLow).ToList();
-        if (low.Count > 0)
-            parts.Add(string.Join(" + ", low.Select(t => $"{t.Frequency} Hz")) + $" at {low.Max(t => t.LevelDb):0} dBFS" + (low.Count > 1 ? " peak" : ""));
-        parts.AddRange(tones.Where(t => !t.IsLow).Select(t => $"{t.Frequency / 1000} kHz at {t.LevelDb:0} dBFS"));
-        return string.Join(" + ", parts) + $" for {seconds.ToString(CultureInfo.InvariantCulture)} s";
+        string names = string.Join(" + ", tones.Select(t => (t.IsLow ? $"{t.Frequency} Hz" : $"{t.Frequency / 1000} kHz") + $" at {t.LevelDb:0} dBFS"));
+        return $"{names} for {seconds.ToString(CultureInfo.InvariantCulture)} s";
     }
 }
 

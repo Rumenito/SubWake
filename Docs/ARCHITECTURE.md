@@ -66,7 +66,7 @@ How the app is put together and where to make a change. Back to the [README](../
 ## Audio engine
 
 - **Playback:** WASAPI shared mode, mixed with other audio. It uses the output's mix format when that's 32-bit float or 16-bit PCM. Otherwise it hands Windows float stereo with automatic conversion. Buffer 200 ms, filled first, then topped up every 15 ms. It times out at burst length + 5 s.
-- **Synthesis:** at the output's sample rate, one channel copied to every channel. Low tones (the main tone at `lowToneHz`, and 20 Hz) are summed, then scaled down if their true peak passes the set level. The 20 kHz tone is added at −40 dBFS. A raised-cosine fade (0.2 s) at each end, so it never clicks or clips.
+- **Synthesis:** at the output's sample rate, one channel copied to every channel. Each low tone (the main tone at `lowToneHz`, and 20 Hz) plays at the set level and the 20 kHz tone at −40 dBFS. They are summed and scaled down only if the sum would pass −0.1 dBFS (`MaxPeak`). A raised-cosine fade (0.2 s) at each end, so it never clicks or clips.
 - **Finding the output:** `Devices.Resolve` tries the endpoint ID, then the exact name, then a name containing the saved one (this covers 1.0.x names cut to 31 characters by the old waveOut API).
 - **Errors:** `AUDCLNT_E_DEVICE_IN_USE` and `EXCLUSIVE_MODE_ONLY` → Busy. `DEVICE_INVALIDATED` and "element not found" → Missing. Anything else → Failed, with the error code.
 

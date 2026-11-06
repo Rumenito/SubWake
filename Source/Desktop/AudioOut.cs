@@ -43,20 +43,18 @@ static class AudioOut
     {
         int frames = (int)(seconds * sampleRate);
         int fade = Math.Max(1, (int)(FadeSeconds * sampleRate));
-        var low = tones.Where(t => t.IsLow).ToArray();
-        var high = tones.Where(t => !t.IsLow).ToArray();
-        double lowTarget = low.Length > 0 ? low.Max(t => Amplitude(t.LevelDb)) : 0;
-
-        var lowMix = new double[frames];
-        double lowPeak = 0;
+        // Each tone plays at its own level and they add up, as in 1.0 (two tones at -6 dBFS peak near 0 dBFS).
+        // The sum is only scaled down if it would pass MaxPeak, so it never clips.
+        var mix = new double[frames];
+        double peak = 0;
         for (int i = 0; i < frames; i++)
         {
             double value = 0;
-            foreach (var t in low) value += Amplitude(t.LevelDb) * Math.Sin(2 * Math.PI * t.Frequency * i / sampleRate);
-            lowMix[i] = value;
-            lowPeak = Math.Max(lowPeak, Math.Abs(value));
+            foreach (var t in tones) value += Amplitude(t.LevelDb) * Math.Sin(2 * Math.PI * t.Frequency * i / sampleRate);
+            mix[i] = value;
+            peak = Math.Max(peak, Math.Abs(value));
         }
-        double scale = lowPeak > lowTarget && lowPeak > 0 ? lowTarget / lowPeak : 1;
+        double scale = peak > MaxPeak ? MaxPeak / peak : 1;
 
         var buffer = new float[frames];
         for (int i = 0; i < frames; i++)
@@ -65,12 +63,13 @@ static class AudioOut
             if (i < fade) envelope = 0.5 - 0.5 * Math.Cos(Math.PI * i / fade);
             int fromEnd = frames - 1 - i;
             if (fromEnd < fade) envelope = Math.Min(envelope, 0.5 - 0.5 * Math.Cos(Math.PI * fromEnd / fade));
-            double value = lowMix[i] * scale;
-            foreach (var t in high) value += Amplitude(t.LevelDb) * Math.Sin(2 * Math.PI * t.Frequency * i / sampleRate);
-            buffer[i] = (float)Math.Clamp(value * envelope, -1, 1);
+            buffer[i] = (float)Math.Clamp(mix[i] * scale * envelope, -1, 1);
         }
         return buffer;
     }
+
+    /// <summary>Highest sample the burst may reach: -0.1 dBFS, just under clipping.</summary>
+    public const double MaxPeak = 0.9886;
 
     static double Amplitude(double db) => Math.Pow(10, db / 20);
 

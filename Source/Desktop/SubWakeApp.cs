@@ -14,7 +14,7 @@ enum CalibrationPhase { None, Waiting, Stepping, Done }
 sealed class SubWakeApp : ApplicationContext
 {
     const double CalibrationStartDb = -60, CalibrationStepDb = 3, CalibrationMaxDb = Settings.MaxLevelDb, CalibrationMarginDb = 6;
-    const int CalibrationGapSeconds = 12;   // The sub can take several seconds to wake.
+    const int CalibrationGapSeconds = 1;   // A step every burst length + 1 s; the 6 dB margin covers a late click.
     static readonly TimeSpan AudioActiveWindow = TimeSpan.FromSeconds(3);    // "Playing" in the window.
     static readonly TimeSpan AudioStoppedAfter = TimeSpan.FromSeconds(15);   // Silence this long logs "Audio stopped" (track gaps don't).
     static readonly (double Minutes, string Label)[] SnoozeChoices = [(30, "30 minutes"), (60, "1 hour"), (120, "2 hours")];

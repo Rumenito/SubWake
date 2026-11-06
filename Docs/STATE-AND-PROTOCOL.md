@@ -132,7 +132,7 @@ The page counts down locally each second between pushes.
 The format is `yyyy-MM-dd HH:mm:ss  message`, with two spaces, the same as the earlier PowerShell version. Logging errors are swallowed. `Activity.FromLog` reads the lines marked ⏱ to rebuild the timeline.
 
 - ⏱ `Started v<ver>: <tones> for <s> s every <n> min on '<device>'.`, plus ` Keep-awake is off.` when off
-- ⏱ `Played <tones> for <s> s on '<device>' (scheduled|manual|calibration).`. Tones read `35 Hz at -30 dBFS`, or `35 Hz + 20 Hz at -6 dBFS peak + 20 kHz at -40 dBFS`
+- ⏱ `Played <tones> for <s> s on '<device>' (scheduled|manual|calibration).`. Tones read `35 Hz at -30 dBFS`, or `35 Hz at -6 dBFS + 20 Hz at -6 dBFS + 20 kHz at -40 dBFS`
 - `Skipped: <error>`, once per distinct error
 - ⏱ `Paused: <reason>.` (snoozed until HH:mm, PC locked, quiet hours until HH:mm, you're away, recording in *app*, *app* is open), ⏱ `Resumed.`
 - `Snoozed for 30 minutes|1 hour|2 hours, until HH:mm.`, `Snooze ended.`

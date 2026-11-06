@@ -151,7 +151,8 @@ t.Group("Settings");
     t.Equal("35 Hz at -40 dBFS for 1.5 s", Settings.Describe(defaults.Tones(), 1.5), "log text for one tone");
     t.Equal("50 Hz at -30 dBFS for 1 s", Settings.Describe(Parse("""{"lowToneHz":50,"levelDb":-30}""").Tones(), 1), "log text for another frequency");
     var all = Parse("""{"toneLow":true,"tone20":true,"tone20k":true,"levelDb":-6}""");
-    t.Equal("35 Hz + 20 Hz at -6 dBFS peak + 20 kHz at -40 dBFS for 2 s", Settings.Describe(all.Tones(), 2), "log text for a mix");
+    t.Equal("35 Hz at -6 dBFS + 20 Hz at -6 dBFS + 20 kHz at -40 dBFS for 2 s", Settings.Describe(all.Tones(), 2), "log text for a mix");
+    t.Equal(-40.0, all.Tones().Single(x => x.Frequency == 20000).LevelDb, "20 kHz stays at -40 dBFS");
     var highOnly = Parse("""{"toneLow":false,"tone20k":true,"lowToneHz":40}""");
     t.Equal("40", string.Join(",", highOnly.Tones(includeHigh: false).Select(x => x.Frequency)), "calibration with only 20 kHz on uses the low tone's frequency");
 }
@@ -169,12 +170,14 @@ t.Group("Burst sound");
     t.Near(0, one[^1], 1e-3, "fades out to silence");
 
     var two = AudioOut.MakeBurst(2, [new Tone(35, -6), new Tone(20, -6)], 48000);
-    t.Check(Peak(two) <= target + 1e-6, $"two low tones together stay at the set peak (peak {20 * Math.Log10(Peak(two)):0.00} dBFS)");
-    t.Check(Peak(two) > target * 0.98, "and still reach it");
+    t.Check(Peak(two) > 0.97, $"two low tones each keep their own level, as in 1.0 (peak {20 * Math.Log10(Peak(two)):0.00} dBFS)");
+    t.Check(Peak(two) <= AudioOut.MaxPeak + 1e-6, "but the sum stays under 0 dBFS");
+    var quiet2 = AudioOut.MakeBurst(2, [new Tone(35, -30), new Tone(20, -30)], 48000);
+    t.Check(Peak(quiet2) > Math.Pow(10, -30 / 20.0) * 1.9, "quiet tones add up unscaled");
 
     var mix = AudioOut.MakeBurst(2, [new Tone(35, -6), new Tone(20, -6), new Tone(20000, -40)], 44100);
     t.Equal(88200, mix.Length, "follows the output's sample rate");
-    t.Check(Peak(mix) <= target + 0.01 + 1e-6, "20 kHz adds only its own -40 dBFS on top");
+    t.Check(Peak(mix) <= AudioOut.MaxPeak + 1e-6, "the full mix stays under 0 dBFS");
     t.Check(mix.All(x => Math.Abs(x) < 0.99f), "never clips");
 }
 
